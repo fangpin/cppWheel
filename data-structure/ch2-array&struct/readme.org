@@ -1,1 +1,2 @@
 * Fundamentals of Data Structures in C
+- array and struct
