@@ -1,0 +1,65 @@
+* thread binary tree
+Each leave node has two null pointers. try to make use of these null pointer. Let
+
+- the left child ptr points to the inorder predecessor ptr.
+- the right child ptr points to the inorder successor ptr.
+
+It makes it easy to get the inorder travel in linear time, little faster than the
+recursive method. Fit for the stack lack suitation.
+
+#+BEGIN_SRC c++
+  typedef struct threaded_tree* threaded_pointer;
+
+  // tree with head node, whose right_child points to the root node or null for an empty tree.
+  // first node's inorder predecessor and last node's inorder successor point to the head node.
+  typedef struct threaded_tree{
+      short int left_thread;
+      short int right_thread;
+      threaded_pointer left_child;
+      threaded_pointer right_child;
+      char data;
+  };
+
+
+  // find the inorder successor
+  threaded_pointer insucc(threaded_pointer root){
+      threaded_pointer tmp = root->right_child;
+      if (!root->right_thread)
+          while(!tmp->left_thread)
+              tmp = tmp->left_child;
+      return tmp;
+  }
+
+  // inorder travel
+  void tinorder(threaded_pointer head){
+      threaded_pointer tmp = head;
+      while(1){
+          tmp = insucc(tmp);
+          if (tmp == head) break;
+          // do something
+          print("%c\t", tmp->data);
+      }
+  }
+#+END_SRC
+
+** right insert into a threaded tree
+- turn *parent->right_thread* to be *false*
+- set *child->left_thread* and *child->right_thread* to be *true*
+- set *child->left_child* pointing to the *parent*
+- set *child->right_child* pointing to the *parent->right_child*
+- set *parent->right_child* pointing to the *child*
+
+#+BEGIN_SRC c++
+  void right_insert(thread_pointer parent, thread_pointer child){
+      child->left_thread = 1;
+      child->left_child = parent;
+      child->right_thread = parent->right_thread;
+      child->right_child = parent->right_child;
+      parent->right_thread = 0;
+      parent->right_child = child;
+      if(!child->right_thread){
+          thread_pointer tmp = insucc(child);
+          tmp -> left_child = child;
+      }
+  }
+#+END_SRC
