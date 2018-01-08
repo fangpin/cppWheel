@@ -112,3 +112,58 @@ preorder travel
       }
   }
 #+END_SRC
+
+* heap
+** data structure
+#+BEGIN_SRC c++
+  typedef struct {
+      int key;
+  } element;
+
+  #define MAX_SIZE 200
+  #define HEAP_FULL(n) (n == MAX_SIZE-1)
+  #define HEAP_EMPTY(n) (!n)
+
+  element haap[MAX_SIZE];
+  int n = 0;
+#+END_SRC
+
+** insert
+#+BEGIN_SRC c++
+  void insert_max_heap(element item, int *n){
+      if(HEAP_FULL(*n)){
+          fprintf(stderr, "heap is full\n");
+          exit(1);
+      }
+      int i = ++(*n);
+      while(i<1 && heap[i/2].key > item.key){
+          heap[i] = heap[i/2];
+          i /= 2;
+      }
+      heap[i] = item;
+  }
+#+END_SRC
+
+** delete
+#+BEGIN_SRC c++
+  element delete_max_heap(int *n){
+      if(HEAP_EMPTY(*n)){
+          fprintf(stderr, "heap is empty\n");
+          exit(1);
+      }
+      int parent = 1, child = 2;
+      element item = heap[1];
+      element tmp = heap[(*n)--];
+      while(child <= *n){
+          if(child < n && heap[child+1].key > heap[child].key)
+              ++child;
+          if(tmp.key >= heap[child].key)
+              break;
+          heap[parent] = heap[child];
+          parent = child;
+          child = child * 2;
+      }
+      heap[parent] = tmp;
+      return item;
+ }
+#+END_SRC
