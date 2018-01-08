@@ -83,3 +83,32 @@ recursive method. Fit for the stack lack suitation.
   }
 #+END_SRC
 
+** preorder travel and postorder travel for threaded binary tree
+*** postorder
+    maybe need to add child-to-parent ptr.
+*** preorder 
+preorder successor
+#+BEGIN_SRC c++
+  thread_pointer presucc(thread_pointer root){
+      if(!root->left_thread)
+          return root->left_child;
+      if(!root->right_thread)
+          return root->right_child;
+      thread_pointer tmp = root->right_child;
+      while(tmp->right_thread)
+          tmp = tmp->right_child;
+      return tmp->right_child;
+  }
+#+END_SRC
+preorder travel
+#+BEGIN_SRC c++
+  void preorder(thread_pointer head){
+      thread_pointer tmp = head;
+      while(1){
+          tmp = presucc(tmp);
+          if(tmp == head) break;
+          // do something
+          printf("%c\t", tmp->data);
+      }
+  }
+#+END_SRC
