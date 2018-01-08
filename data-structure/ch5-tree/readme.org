@@ -1,4 +1,6 @@
+#+OPTIONS: toc:t
 * thread binary tree
+** data structure
 Each leave node has two null pointers. try to make use of these null pointer. Let
 
 - the left child ptr points to the inorder predecessor ptr.
@@ -43,8 +45,9 @@ recursive method. Fit for the stack lack suitation.
 #+END_SRC
 
 ** right insert into a threaded tree
+- set *child->left_thread* to be *true*
+- set *child->right_thread* = *parent->right_thread*
 - turn *parent->right_thread* to be *false*
-- set *child->left_thread* and *child->right_thread* to be *true*
 - set *child->left_child* pointing to the *parent*
 - set *child->right_child* pointing to the *parent->right_child*
 - set *parent->right_child* pointing to the *child*
@@ -63,3 +66,20 @@ recursive method. Fit for the stack lack suitation.
       }
   }
 #+END_SRC
+
+** left insert into a threaded tree
+- set *child->right_thread* to be *true*
+- set *child->left_thread* = *parent->left_thread*
+- set *child->right_child* = *parent*
+- set *child->left_child* = *parent->left_child*
+- set *parent->left_child* = *child*
+#+BEGIN_SRC c++
+  void left_insert(thread_pointer parent, thread_pointer child){
+      child->right_thread = 1;
+      child->right_child = parent;
+      child->left_thread = parent->left_thread;
+      child->left_child = parent->left_child;
+      parent->left_child = child;
+  }
+#+END_SRC
+
