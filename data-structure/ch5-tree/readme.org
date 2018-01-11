@@ -167,3 +167,124 @@ preorder travel
       return item;
  }
 #+END_SRC
+
+* binary search tree
+- key is all different
+- *left_child* < *root* < *right_child*
+- left subtree and right subtree are also search tree.
+** search
+#+BEGIN_SRC c++ 
+  tree_pointer search(tree_pointer root, int key){
+      // if key is in the tree, return the ptr pointing to the node, else return null;
+      if(!root)
+          return NULL;
+      else if(root->key == key)
+          return root;
+      else if(key < root->key)
+          return search(root->left_child, key);
+      return search(root->right_child, key);
+  }
+#+END_SRC
+or iteration version
+#+BEGIN_SRC c++
+  tree_pointer search2(tree_pointer root, int key){
+      while(root){
+          if(root.key == key)
+              return root;
+          else if(key < root.key)
+              root = root->left_child;
+          else
+              root = root->right_child;
+      }
+      return NULL;
+  }
+#+END_SRC
+** insert
+#+BEGIN_SRC c++
+  tree_pointer search3(tree_pointer root, int key){
+      // return NULL if find, else return ptr to the final node.
+      tree_pointer tmp = NULL;
+      while(root){
+          tmp = root;
+          if(root.key == key)
+              return NULL;
+          else if(key < root.key){
+              root = root->left_child;
+          }
+          else
+              root = root->right_child;
+      }
+      return NULL;
+  }
+
+  void insert_node(tree_pointer root, int item){
+      tree_pointer tmp = search3(root, item);
+      if(tmp){
+          tree_pointer ptr = (tree_pointer)malloc(sizeof(tree));
+          ptr->key = item;
+          ptr->left_child = ptr->right_child = NULL;
+          if(root){
+              if(item < tmp.key)
+                  tmp.left_child = ptr;
+              else
+                  tmp.right_child = ptr
+          }
+          else
+              root = ptr;
+      }
+  }
+#+END_SRC
+
+** delete
+- if leaf, remove directly.
+- only one son, replace directly.
+- two sons, replace with biggest in left subtree or least in right subtree and do recursion
+
+replace with biggest in left subtree for example.
+#+BEGIN_SRC c++
+  void _delete_left(tree_pointer node, tree_pointer parent){
+      if(!node->left_child && !node->right_child){
+          if(parent->left_child == node)
+              parent->left_child = NULL;
+          else if(parent->right == node)
+              parent->right_child = NULL;
+          free(node);
+          node = NULL;
+      }
+      // only one son, replace directly.
+      else if(!node->left_child){
+          if(parent->left_child == node)
+              parent->left_child = node->right_child;
+          else if(parent->right == node)
+              parent->right_child = node->right_child;
+          free(node);
+          node = NULL;
+      }
+      else if(!node->right_child){
+          if(parent->left_child == node)
+              parent->left_child = node->left_child;
+          else if(parent->right == node)
+              parent->right_child = node->left_child;
+          free(node);
+          node = NULL;
+      }
+      // two sons, replace with biggest in left subtree or least in right subtree and do recursion
+      tree_pointer tmp = node->left_child, tmparent=node;
+      while(tmp->right_child){
+          tmparent = tmp;
+          tmp = tmp->right_child;
+      }
+      node->key = tmp->key;
+      _delete_left(tmp, tmparent);
+      free(tmp);
+  }
+
+
+  void delete_left(tree_pointer root, int item){
+      tree_pointer node = search2(root, item);
+      tree_pointer parent = search3(root, item);
+      // 1 free directly.
+      _delete_left(node, parent);
+  }
+#+END_SRC
+
