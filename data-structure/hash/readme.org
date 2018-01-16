@@ -1,0 +1,31 @@
+* hashing
+- prime tableSize is important to prevent position loop when insert.
+
+** seperate chaining
+- a linked list for each hash cell to store all the collision elements
+
+** open addressing
+move forward when collision happens.
+*** quadratic hash
+H_i(x) = h(x) + f_i(x)
+
+f_i(x) = i*i
+
+when tableSize is prime and tableSize > 2*numberOfElements, any element insert will be supported.
+
+since if H_i(x)=H_j(x) (i!=j) which means i*i == j*j (mod tableSize), i.e (i+j)(i-j) == 0 (mod tableSize).
+
+since i,j < tableSize/2. thus i-j=0
+
+*** double hash
+use hash_2 in addition when collision happens. 
+H_0(x) = hash(x)
+H_i(x) = H_{i-1} + hash_2(x)
+
+hash_2(x) = R - (R mod x)     (R is a prime)
+
+* rehashing
+when the size of the hashing table goes to full, the operations take too long and even fail.
+
+This time we need increase the tableSize and do rehashing with a new hash function to insert the
+elements into the new table, and do the lazy deletion the same time.
