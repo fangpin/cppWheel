@@ -30,5 +30,6 @@ typedef HashTable* HashTbl;
 HashTbl init(unsigned int tableSize);
 Position find(HashTbl tbl, Element x);
 void insert(HashTbl tbl, Element x);
-void delete(HashTbl tbl, Element x);
+
+/* set mark for lazy delete and really do it when rehashing */
 #endif
