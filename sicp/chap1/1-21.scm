@@ -1,0 +1,15 @@
+(define (smallest-divisor n)
+  (define (iter k)
+    (cond ((> (* k k) n) n)
+          ((divide? n k) k)
+          (else (iter (+ k 1)))))
+  (iter 2))
+
+(define (divide? n k)
+  (= (remainder n k) 0))
+
+(display (smallest-divisor 199))
+(display " ")
+(display (smallest-divisor 1999))
+(display " ")
+(display (smallest-divisor 19999))
