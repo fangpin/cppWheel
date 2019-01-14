@@ -1,4 +1,0 @@
-* branch
-#+BEGIN_SRC cpp
-
-#+END_SRC
