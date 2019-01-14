@@ -1,4 +1,88 @@
+CPP TMP (template meta programming)
 * branch
 #+BEGIN_SRC cpp
+// branch.cpp
+#include <iostream>
 
+template<bool COND, typename THEN, typename ELSE>
+class IF_;
+
+template<typename THEN, typename ELSE>
+class IF_<true, THEN, ELSE> {
+    public: typedef THEN value_type;
+};
+
+template<typename THEN, typename ELSE>
+class IF_<false, THEN, ELSE> {
+    public: typedef ELSE value_type;
+};
+
+int main() {
+    const int len = 4;
+    IF_<sizeof(short) == len, short,
+        IF_<sizeof(int)  == len, int,
+            IF_<sizeof(long) == len, long, long long>::value_type>::value_type>::value_type value;
+    std::cout << sizeof(value) << std::endl;
+
+    std::conditional<sizeof(short) == len, short, int>::type val;
+    std::cout << sizeof(val) << std::endl;
+    return 0;
+}
+
+#+END_SRC
+
+* loop unrolling
+#+BEGIN_SRC cpp
+// loop-unrolling.cpp
+#include <iostream>
+
+template<int N>
+class sum {
+    public: const static int ret = sum<N-1>::ret + N;
+};
+
+template<>
+class sum<0> {
+    public: const static int ret = 0;
+};
+
+int main() {
+    std::cout << sum<5>::ret << std::endl;
+    return 0;
+}
+#+END_SRC
+
+* traits
+#+BEGIN_SRC cpp
+// traits.cpp
+#include <iostream>
+#include <vector>
+
+template<typename T>
+class traits {
+public: typedef typename T::value_type type;
+};
+
+template<typename T>
+class traits<T*> {
+public: typedef T type;
+};
+
+template<typename iter>
+typename traits<iter>::type sum(iter _begin, iter _end) {
+    typename traits<iter>::type ret{0};
+    for (auto it=_begin; it!=_end; ++it) {
+        ret += *it;
+    }
+    return ret;
+}
+
+int main() {
+    std::vector<int> vec(3, 3);
+    std::cout << sum(vec.begin(), vec.end()) << std::endl;
+
+    int a[] = {3, 3, 3};
+    std::cout << sum(a, a+3) << std::endl;
+    return 0;
+}
 #+END_SRC
