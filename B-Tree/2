@@ -1,0 +1,23 @@
+#ifndef _B_TREE_H
+#define _B_TREE_H
+
+#include <vector>
+
+template<typename T>
+class BTreeNode {
+public:
+    BTreeNode() = delete;
+    BTreeNode(int t, bool leaf);
+private:
+    int t_;
+    int n_;
+    bool leaf_;
+    std::vector<T> keys_;
+    std::vector<T> children_;
+
+friend class BTree<T>;
+};
+
+
+
+#endif // #ifndef _B_TREE_H
