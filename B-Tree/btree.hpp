@@ -95,14 +95,14 @@ public:
         return root_->search(rhs);
     }
 
-    void traverse(std::vector<BTreeNode<T>>& rhs) {
+    void traverse(std::vector<T>& rhs) {
         root_->traverse(rhs);
     }
 
     // a new key is always inserted at leave node.
     void insert(const T& rhs) {
         if (root_ == nullptr) {
-            root_ = std::make_shared<BTreeNode<T>>(true);
+            root_ = new BTreeNode<T>(true);
             root_->keys_.push_back(rhs);
         }
         else {
