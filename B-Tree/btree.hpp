@@ -3,20 +3,21 @@
 
 #include <vector>
 #include <memory>
+#include <algorithm>
 
 template<typename T>
 class BTree;
 
 template<typename T>
-class BTreeNode {
-public:
+struct BTreeNode {
     // constructors
     BTreeNode() = delete;
     BTreeNode(const BTreeNode&) = default;
     BTreeNode(BTreeNode&&) = default;
     BTreeNode& operator=(const BTreeNode&) = default;
     BTreeNode& operator=(BTreeNode&&) = default;
-    BTreeNode(int t, bool leaf):t_(t), leaf_(leaf){};
+    BTreeNode(bool leaf): leaf_(leaf){}
+    // BTreeNode(bool leaf, const std::vector<T>& keys, const std::vector<BTreeNode<T>>& children): leaf_(leaf), keys_(keys), children_(children) {}
 
     ~BTreeNode() {}
 
@@ -41,9 +42,35 @@ public:
             children_[i]->traverse(rhs);
         }
     }
-private:
-    int t_; // minimal degree of B Tree
-    // int n_; // current number of elements in this node.
+
+    void splitChild(int i, int t) {
+        BTreeNode<T>* child = children_[i];
+        BTreeNode<T>* rightNode = new BTreeNode<T>(child->leaf_);
+        rightNode->keys_ = std::vector<T>(child->keys_.begin()+t, child->keys_.end());
+        rightNode->children_ = std::vector<BTreeNode<T>*>(child->children_.begin()+t, child->children_.end());
+        keys_.insert(keys_.begin()+i, child->keys_[i]);
+        children_.insert(children_.begin()+i+1, rightNode);
+        child->keys_.erase(child->keys_.begin()+t-1, child->keys_.end());
+        child->children_.erase(child->children_.begin()+t, child->children_.end());
+    }
+
+    void insertNonFull(int k, int t) {
+        auto it = std::lower_bound(keys_.begin(), keys_.end(), k);
+        if (it != keys_.end() && *it == k)
+            return;
+        if (leaf_) {
+            // key already in this node.
+            keys_.insert(it, k);
+        }
+        else {
+            int i = it - keys_.begin();
+            if (children_[i]->keys_.size() == 2 * t - 1 ) {
+                splitChild(i, t);
+            }
+            children_[i]->insertNonFull(k, t);
+        }
+    }
+
     bool leaf_; // wheather is leaf node
     std::vector<T> keys_; // store keys in this node.
     std::vector<BTreeNode<T>*> children_;  // children pointers
@@ -55,9 +82,7 @@ template<typename T>
 class BTree {
 public:
     // constructors
-    BTree(int t): t_(t) {
-        root_ = std::make_shared<BTreeNode<T>>(t_, true);
-    }
+    BTree(int t): t_(t), root_(nullptr) {}
     BTree() = delete;
     BTree(const BTree&) = default;
     BTree(BTree&&) = default;
@@ -74,9 +99,33 @@ public:
         root_->traverse(rhs);
     }
 
+    // a new key is always inserted at leave node.
+    void insert(const T& rhs) {
+        if (root_ == nullptr) {
+            root_ = std::make_shared<BTreeNode<T>>(true);
+            root_->keys_.push_back(rhs);
+        }
+        else {
+            if (root_->keys_.size() == 2 * t_ - 1) {
+                BTreeNode<T>* newRoot = new BTreeNode<T>(false);
+                newRoot->children_.push_back(root_);
+                newRoot->splitChild(0, t_);
+                root_ = newRoot;
+                if (root_->keys_[0] == rhs)
+                    return;
+                int i=0;
+                if (root_->keys_[0] < rhs)
+                    ++i;
+                root_->children_[i]->insertNonFull(rhs, t_);
+            }
+            else
+                root_->insertNonFull(rhs, t_);
+        }
+    }
+
 private:
-    std::shared_ptr<BTreeNode<T>> root_;
-    int t_; // minimal degree of B Tree
+    BTreeNode<T>* root_;
+    size_t t_; // minimal degree of B Tree
 };
 
 
