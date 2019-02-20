@@ -17,7 +17,6 @@ struct BTreeNode {
     BTreeNode& operator=(const BTreeNode&) = default;
     BTreeNode& operator=(BTreeNode&&) = default;
     BTreeNode(bool leaf): leaf_(leaf){}
-    // BTreeNode(bool leaf, const std::vector<T>& keys, const std::vector<BTreeNode<T>>& children): leaf_(leaf), keys_(keys), children_(children) {}
 
     ~BTreeNode() {}
 
@@ -46,26 +45,33 @@ struct BTreeNode {
     void splitChild(int i, int t) {
         BTreeNode<T>* child = children_[i];
         BTreeNode<T>* rightNode = new BTreeNode<T>(child->leaf_);
-        rightNode->keys_ = std::vector<T>(child->keys_.begin()+t, child->keys_.end());
-        rightNode->children_ = std::vector<BTreeNode<T>*>(child->children_.begin()+t, child->children_.end());
-        keys_.insert(keys_.begin()+i, child->keys_[i]);
+        rightNode->keys_.assign(child->keys_.begin()+t, child->keys_.end());
+        if (!child->leaf_)
+            rightNode->children_.assign(child->children_.begin()+t, child->children_.end());
+        keys_.insert(keys_.begin()+i, child->keys_[t-1]);
         children_.insert(children_.begin()+i+1, rightNode);
         child->keys_.erase(child->keys_.begin()+t-1, child->keys_.end());
-        child->children_.erase(child->children_.begin()+t, child->children_.end());
+        if (!child->leaf_)
+            child->children_.erase(child->children_.begin()+t, child->children_.end());
     }
 
     void insertNonFull(int k, int t) {
         auto it = std::lower_bound(keys_.begin(), keys_.end(), k);
+        // key already in this node.
         if (it != keys_.end() && *it == k)
             return;
         if (leaf_) {
-            // key already in this node.
             keys_.insert(it, k);
         }
         else {
             int i = it - keys_.begin();
             if (children_[i]->keys_.size() == 2 * t - 1 ) {
                 splitChild(i, t);
+                // k already in btree
+                if (keys_[i] == k)
+                    return ;
+                if (keys_[i] < k)
+                    ++i;
             }
             children_[i]->insertNonFull(k, t);
         }
