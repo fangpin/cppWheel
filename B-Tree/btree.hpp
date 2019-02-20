@@ -12,11 +12,11 @@ template<typename T>
 struct BTreeNode {
     // constructors
     BTreeNode() = delete;
-    BTreeNode(const BTreeNode&) = default;
-    BTreeNode(BTreeNode&&) = default;
-    BTreeNode& operator=(const BTreeNode&) = default;
-    BTreeNode& operator=(BTreeNode&&) = default;
-    BTreeNode(bool leaf): leaf_(leaf){}
+    BTreeNode(const BTreeNode&) = delete;
+    BTreeNode(BTreeNode&&) = delete;
+    BTreeNode& operator=(const BTreeNode&) = delete;
+    BTreeNode& operator=(BTreeNode&&) = delete;
+    BTreeNode(bool leaf, BTreeNode<T>* parent=nullptr): leaf_(leaf), parent_(parent){}
 
     ~BTreeNode() {}
 
@@ -42,44 +42,10 @@ struct BTreeNode {
         }
     }
 
-    void splitChild(int i, int t) {
-        BTreeNode<T>* child = children_[i];
-        BTreeNode<T>* rightNode = new BTreeNode<T>(child->leaf_);
-        rightNode->keys_.assign(child->keys_.begin()+t, child->keys_.end());
-        if (!child->leaf_)
-            rightNode->children_.assign(child->children_.begin()+t, child->children_.end());
-        keys_.insert(keys_.begin()+i, child->keys_[t-1]);
-        children_.insert(children_.begin()+i+1, rightNode);
-        child->keys_.erase(child->keys_.begin()+t-1, child->keys_.end());
-        if (!child->leaf_)
-            child->children_.erase(child->children_.begin()+t, child->children_.end());
-    }
-
-    void insertNonFull(int k, int t) {
-        auto it = std::lower_bound(keys_.begin(), keys_.end(), k);
-        // key already in this node.
-        if (it != keys_.end() && *it == k)
-            return;
-        if (leaf_) {
-            keys_.insert(it, k);
-        }
-        else {
-            int i = it - keys_.begin();
-            if (children_[i]->keys_.size() == 2 * t - 1 ) {
-                splitChild(i, t);
-                // k already in btree
-                if (keys_[i] == k)
-                    return ;
-                if (keys_[i] < k)
-                    ++i;
-            }
-            children_[i]->insertNonFull(k, t);
-        }
-    }
-
     bool leaf_; // wheather is leaf node
     std::vector<T> keys_; // store keys in this node.
     std::vector<BTreeNode<T>*> children_;  // children pointers
+    BTreeNode<T>* parent_; // pointer to parent
 
 friend class BTree<T>;
 };
@@ -90,15 +56,15 @@ public:
     // constructors
     BTree(int t): t_(t), root_(nullptr) {}
     BTree() = delete;
-    BTree(const BTree&) = default;
-    BTree(BTree&&) = default;
-    BTree& operator=(const BTree&) = default;
-    BTree& operator=(BTree&&) = default;
+    BTree(const BTree&) = delete;
+    BTree(BTree&&) = delete;
+    BTree& operator=(const BTree&) = delete;
+    BTree& operator=(BTree&&) = delete;
 
     ~BTree() {}
 
     T* search(const T& rhs) {
-        return root_->search(rhs);
+        return root_ == nullptr ? nullptr : root_->search(rhs);
     }
 
     void traverse(std::vector<T>& rhs) {
@@ -107,32 +73,48 @@ public:
 
     // a new key is always inserted at leave node.
     void insert(const T& rhs) {
+        // empty B-Tree
         if (root_ == nullptr) {
-            root_ = new BTreeNode<T>(true);
+            root_ = new BTreeNode<T>(true, nullptr);
             root_->keys_.push_back(rhs);
         }
         else {
-            if (root_->keys_.size() == 2 * t_ - 1) {
-                BTreeNode<T>* newRoot = new BTreeNode<T>(false);
-                newRoot->children_.push_back(root_);
-                newRoot->splitChild(0, t_);
-                root_ = newRoot;
-                if (root_->keys_[0] == rhs)
-                    return;
-                int i=0;
-                if (root_->keys_[0] < rhs)
-                    ++i;
-                root_->children_[i]->insertNonFull(rhs, t_);
+            BTreeNode<T>* node = root_;
+            // find the leaf node to insert the value
+            while (!node->leaf_) {
+                auto it = std::lower_bound(node->keys_.begin(), node->keys_.end(), rhs);
+                // the value to be inserted is already in this B-Tree.
+                if (it != node->keys_.end() && *it == rhs)
+                    return ;
+                node = node->children_[it - node->keys_.begin()];
             }
-            else
-                root_->insertNonFull(rhs, t_);
+            nodeInsert(node, rhs, t_);
         }
     }
 
 private:
+    void nodeInsert(BTreeNode<T>* node, const T& rhs, const size_t t) {
+        auto it = std::lower_bound(node->keys_.begin(), node->keys_.end(), rhs);
+        node->keys_.insert(it, rhs);
+        if (node->keys_.size() == 2 * t) {
+            BTreeNode<T>* sibling = new BTreeNode<T>(node->leaf_, node->parent_);
+            sibling->keys_.assign(node->keys_.begin() + t, node->keys_.end());
+            if (!node->leaf_) {
+                sibling->children_.assign(node->children_.begin() + t, node->children_.end());
+            }
+            BTreeNode<T>* parent = node->parent_;
+            if (parent == nullptr) {
+                parent = new BTreeNode<T>(false, nullptr);
+                node->parent_ = parent;
+                parent->children_.push_back(node);
+                root_ = parent;
+            }
+        }
+    }
+
     BTreeNode<T>* root_;
     size_t t_; // minimal degree of B Tree
-};
+}; // class BTree
 
 
 
