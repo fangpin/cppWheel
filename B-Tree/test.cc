@@ -5,7 +5,7 @@
 
 int main() {
     BTree<int> btree(2);
-    for (int i=0; i<12; ++i) {
+    for (int i=0; i<1000; ++i) {
         btree.insert(i);
     }
 

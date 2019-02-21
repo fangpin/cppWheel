@@ -10,6 +10,7 @@ class BTree;
 
 template<typename T>
 struct BTreeNode {
+public:
     // constructors
     BTreeNode() = delete;
     BTreeNode(const BTreeNode&) = delete;
@@ -42,6 +43,7 @@ struct BTreeNode {
         }
     }
 
+private:
     bool leaf_; // wheather is leaf node
     std::vector<T> keys_; // store keys in this node.
     std::vector<BTreeNode<T>*> children_;  // children pointers
@@ -109,13 +111,16 @@ private:
                 root_ = parent;
             }
             BTreeNode<T>* sibling = new BTreeNode<T>(node->leaf_, node->parent_);
-            sibling->keys_.assign(node->keys_.begin() + t, node->keys_.end());
+            sibling->keys_.assign(node->keys_.begin() + t + 1, node->keys_.end());
             if (!node->leaf_) {
-                sibling->children_.assign(node->children_.begin() + t, node->children_.end());
+                sibling->children_.assign(node->children_.begin() + t + 1, node->children_.end());
+                for (auto it = sibling->children_.begin(); it!=sibling->children_.end(); ++it) {
+                    (*it)->parent_ = sibling;
+                }
             }
-            T midKey = std::move(node->keys_[t-1]);
-            node->keys_.erase(node->keys_.begin() + t - 1, node->keys_.end());
-            node->children_.erase(node->children_.begin() + t, node->children_.end());
+            T midKey = std::move(node->keys_[t]);
+            node->keys_.erase(node->keys_.begin() + t, node->keys_.end());
+            node->children_.erase(node->children_.begin() + t + 1, node->children_.end());
             splitInsert(parent, midKey, t, sibling);
         }
     }
@@ -123,7 +128,5 @@ private:
     BTreeNode<T>* root_;
     size_t t_; // degree of B Tree: the number of keys in a node is in range: [t-1, 2*t-1].
 }; // class BTree
-
-
 
 #endif // #ifndef _B_TREE_H
