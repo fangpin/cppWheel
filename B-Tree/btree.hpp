@@ -88,20 +88,19 @@ public:
                     return ;
                 node = node->children_[it - node->keys_.begin()];
             }
-            nodeInsert(node, rhs, t_);
+            splitInsert(node, rhs, t_, nullptr);
         }
     }
 
 private:
-    void nodeInsert(BTreeNode<T>* node, const T& rhs, const size_t t) {
+    void splitInsert(BTreeNode<T>* node, const T& rhs, const size_t t, BTreeNode<T>* rchild=nullptr) {
         auto it = std::lower_bound(node->keys_.begin(), node->keys_.end(), rhs);
+        if (!node->leaf_ && rchild!=nullptr) {
+            node->children_.insert(node->children_.begin() + (it - node->keys_.begin() + 1), rchild);
+            rchild->parent_ = node;
+        }
         node->keys_.insert(it, rhs);
         if (node->keys_.size() == 2 * t) {
-            BTreeNode<T>* sibling = new BTreeNode<T>(node->leaf_, node->parent_);
-            sibling->keys_.assign(node->keys_.begin() + t, node->keys_.end());
-            if (!node->leaf_) {
-                sibling->children_.assign(node->children_.begin() + t, node->children_.end());
-            }
             BTreeNode<T>* parent = node->parent_;
             if (parent == nullptr) {
                 parent = new BTreeNode<T>(false, nullptr);
@@ -109,11 +108,20 @@ private:
                 parent->children_.push_back(node);
                 root_ = parent;
             }
+            BTreeNode<T>* sibling = new BTreeNode<T>(node->leaf_, node->parent_);
+            sibling->keys_.assign(node->keys_.begin() + t, node->keys_.end());
+            if (!node->leaf_) {
+                sibling->children_.assign(node->children_.begin() + t, node->children_.end());
+            }
+            T midKey = std::move(node->keys_[t-1]);
+            node->keys_.erase(node->keys_.begin() + t - 1, node->keys_.end());
+            node->children_.erase(node->children_.begin() + t, node->children_.end());
+            splitInsert(parent, midKey, t, sibling);
         }
     }
 
     BTreeNode<T>* root_;
-    size_t t_; // minimal degree of B Tree
+    size_t t_; // degree of B Tree: the number of keys in a node is in range: [t-1, 2*t-1].
 }; // class BTree
 
 

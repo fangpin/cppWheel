@@ -4,8 +4,8 @@
 #include "btree.hpp"
 
 int main() {
-    BTree<int> btree(3);
-    for (int i=0; i<100; ++i) {
+    BTree<int> btree(2);
+    for (int i=0; i<12; ++i) {
         btree.insert(i);
     }
 
