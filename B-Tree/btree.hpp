@@ -43,20 +43,84 @@ public:
         }
     }
 
+    // erase rhs in B-Tree, rhs should be in the B-Tree
+    void erase(BTreeNode<T>* parent, const T& rhs, size_t t) {
+        auto it = std::lower_bound(keys_.begin(), keys_.end(), rhs);
+        // found rhs in this node
+        if (it != keys_.end() && *it == rhs) {
+            // leaf node: erase directly and then check wheather need to adjust the tree.
+            if (leaf_) {
+                    keys_.erase(it);
+                    checkAdjust(parent, t);
+            }
+            // nonleaf: replace by its succssor and erase recursively.
+            else {
+                *it = findSucc(children_[it - keys_.begin()]);
+                children_[it - keys_.begin()]->erase(this, rhs);
+            }
+        }
+        // go on to find rhs in the child of this node
+        else {
+            children_[it - keys_.begin()]->erase(this, rhs, t);
+        }
+    }
+
 private:
+    static T findSucc(BTreeNode<T>* node) {
+        while (!node->leaf_)
+            node = node->children_[0];
+        return node->keys_.[0];
+    }
+
+    // adjust this node if needed: the number of keys <= t-1
+    void checkAdjust(BTreeNode<T>* parent, const size_t& t) {
+        if (keys_.size() <= t-1) {
+            auto it = std::find(parent->children_.begin(), parent->children_.end(), this);
+            // choose the left sibling except the last one.
+            auto itSibling = (it == parent->children_.begin() ? it + 1 : it - 1 );
+            BTreeNode<T>* sibling = *itSibling;
+            // auto itParentKey = it - parent->children_.begin() - 1;
+            size_t thisOffset = it - parent->children_.begin();
+            // borrow
+            if (sibling->keys_.size() > t - 1) {
+                // borrow left
+                if (itSibling < it) {
+                    
+                }
+                // borrow right
+                else {
+                    
+                }
+            }
+            // merge left
+            else if (itSibling < it) {
+                sibling->keys_.insert(sibling->keys_.end(), parent->keys_.[thisOffset - 1]);
+                sibling->keys_.insert(sibling->keys_.end(), keys_.begin(), keys_.end());
+                sibling->children_.insert(children_.begin(), children_.end());
+                parent->children_.erase(it);
+                parent->keys_.erase(parent->keys_.begin() + thisOffset - 1);
+                delete this;
+            }
+            // merge right
+            else {
+                
+            }
+        }
+    }
+
     bool leaf_; // wheather is leaf node
     std::vector<T> keys_; // store keys in this node.
     std::vector<BTreeNode<T>*> children_;  // children pointers
     BTreeNode<T>* parent_; // pointer to parent
 
-friend class BTree<T>;
+    friend class BTree<T>;
 };
 
 template<typename T>
 class BTree {
 public:
     // constructors
-    BTree(int t): t_(t), root_(nullptr) {}
+    BTree(size_t t): t_(t), root_(nullptr) {}
     BTree() = delete;
     BTree(const BTree&) = delete;
     BTree(BTree&&) = delete;
@@ -94,6 +158,14 @@ public:
         }
     }
 
+    // erase a value, return false if the value is not in this B-Tree
+    bool erase(const T& rhs) {
+        if (!search(rhs))
+            return false;
+        root_->erase(nullptr, rhs);
+        return true;
+    }
+
 private:
     void splitInsert(BTreeNode<T>* node, const T& rhs, const size_t t, BTreeNode<T>* rchild=nullptr) {
         auto it = std::lower_bound(node->keys_.begin(), node->keys_.end(), rhs);
@@ -126,7 +198,7 @@ private:
     }
 
     BTreeNode<T>* root_;
-    size_t t_; // degree of B Tree: the number of keys in a node is in range: [t-1, 2*t-1].
+    size_t t_; // degree of B Tree: the number of keys in a node must be in range: [t-1, 2*t-1].
 }; // class BTree
 
 #endif // #ifndef _B_TREE_H
