@@ -9,6 +9,10 @@ int main() {
         btree.insert(i);
     }
 
+    for (int i=500; i<1000; ++i) {
+        btree.erase(i);
+    }
+
     std::vector<int> treeData;
     btree.traverse(treeData);
     for (auto x: treeData)

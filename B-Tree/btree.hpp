@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <algorithm>
+#include <stack>
 
 template<typename T>
 class BTree;
@@ -27,7 +28,7 @@ public:
         if (i<keys_.size() && keys_[i]==rhs)
             return &keys_[i];
         if (leaf_) return nullptr;
-        return children_[i].search(rhs);
+        return children_[i]->search(rhs);
     }
 
     void traverse(std::vector<T>& rhs) {
@@ -44,66 +45,78 @@ public:
     }
 
     // erase rhs in B-Tree, rhs should be in the B-Tree
-    void erase(BTreeNode<T>* parent, const T& rhs, size_t t) {
+    void erase(const T& rhs, size_t t) {
         auto it = std::lower_bound(keys_.begin(), keys_.end(), rhs);
         // found rhs in this node
         if (it != keys_.end() && *it == rhs) {
             // leaf node: erase directly and then check wheather need to adjust the tree.
             if (leaf_) {
                     keys_.erase(it);
-                    checkAdjust(parent, t);
+                    checkAdjust(this, t);
             }
             // nonleaf: replace by its succssor and erase recursively.
             else {
                 *it = findSucc(children_[it - keys_.begin()]);
-                children_[it - keys_.begin()]->erase(this, rhs);
+                children_[it - keys_.begin()]->erase(*it, t);
             }
         }
         // go on to find rhs in the child of this node
         else {
-            children_[it - keys_.begin()]->erase(this, rhs, t);
+            children_[it - keys_.begin()]->erase(rhs, t);
         }
     }
 
-private:
     static T findSucc(BTreeNode<T>* node) {
         while (!node->leaf_)
             node = node->children_[0];
-        return node->keys_.[0];
+        return node->keys_[0];
     }
 
     // adjust this node if needed: the number of keys <= t-1
-    void checkAdjust(BTreeNode<T>* parent, const size_t& t) {
-        if (keys_.size() <= t-1) {
-            auto it = std::find(parent->children_.begin(), parent->children_.end(), this);
+    static void checkAdjust(BTreeNode<T>* node, const size_t& t) {
+        if (node->keys_.size() < t-1) {
+            auto it = std::find(node->parent_->children_.begin(), node->parent_->children_.end(), node);
             // choose the left sibling except the last one.
-            auto itSibling = (it == parent->children_.begin() ? it + 1 : it - 1 );
+            auto itSibling = (it == node->parent_->children_.begin() ? it + 1 : it - 1 );
             BTreeNode<T>* sibling = *itSibling;
             // auto itParentKey = it - parent->children_.begin() - 1;
-            size_t thisOffset = it - parent->children_.begin();
+            size_t offset = it - node->parent_->children_.begin();
             // borrow
             if (sibling->keys_.size() > t - 1) {
                 // borrow left
                 if (itSibling < it) {
-                    
+                    node->keys_.insert(node->keys_.begin(), node->parent_->keys_[offset - 1]);
+                    node->parent_->keys_[offset - 1] = sibling->keys_.back();
+                    sibling->keys_.erase(sibling->keys_.end());
                 }
                 // borrow right
                 else {
-                    
+                    node->keys_.insert(node->keys_.end(), node->parent_->keys_[offset - 1]);
+                    node->parent_->keys_[offset] = sibling->keys_[0];
+                    sibling->keys_.erase(sibling->keys_.begin());
                 }
             }
             // merge left
             else if (itSibling < it) {
-                sibling->keys_.insert(sibling->keys_.end(), parent->keys_.[thisOffset - 1]);
-                sibling->keys_.insert(sibling->keys_.end(), keys_.begin(), keys_.end());
-                sibling->children_.insert(children_.begin(), children_.end());
-                parent->children_.erase(it);
-                parent->keys_.erase(parent->keys_.begin() + thisOffset - 1);
-                delete this;
+                sibling->keys_.insert(sibling->keys_.end(), node->parent_->keys_[offset - 1]);
+                sibling->keys_.insert(sibling->keys_.end(), node->keys_.begin(), node->keys_.end());
+                sibling->children_.insert(sibling->children_.end(), node->children_.begin(), node->children_.end());
+                node->parent_->children_.erase(it);
+                node->parent_->keys_.erase(node->parent_->keys_.begin() + offset - 1);
+                delete node;
+                node = nullptr;
+                checkAdjust(sibling->parent_, t);
             }
             // merge right
             else {
-                
+                node->keys_.insert(node->keys_.end(), sibling->parent_->keys_[offset - 1]);
+                node->keys_.insert(node->keys_.end(), sibling->keys_.begin(), sibling->keys_.end());
+                node->children_.insert(node->children_.end(), sibling->children_.begin(), sibling->children_.end());
+                node->parent_->children_.erase(it);
+                node->parent_->keys_.erase(node->parent_->keys_.begin() + offset - 1);
+                delete sibling;
+                sibling = nullptr;
+                checkAdjust(node->parent_, t);
             }
         }
     }
@@ -112,8 +125,6 @@ private:
     std::vector<T> keys_; // store keys in this node.
     std::vector<BTreeNode<T>*> children_;  // children pointers
     BTreeNode<T>* parent_; // pointer to parent
-
-    friend class BTree<T>;
 };
 
 template<typename T>
@@ -162,7 +173,7 @@ public:
     bool erase(const T& rhs) {
         if (!search(rhs))
             return false;
-        root_->erase(nullptr, rhs);
+        root_->erase(rhs, t_);
         return true;
     }
 
